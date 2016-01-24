@@ -41,6 +41,16 @@ let instructions = ["turn on 887,9 through 959,629";
                     "turn off 150,300 through 213,740"]
                     
 let (|TurnOn|TurnOff|Toggle|) (inst : string) =
+    let getcoords (coords : string) =
+        let crds = coords.Replace(" through ", ",").Split(',')
+        
+        (
+            System.Int32.Parse(crds.[0]),
+            System.Int32.Parse(crds.[1]),
+            System.Int32.Parse(crds.[2]),
+            System.Int32.Parse(crds.[3])
+        )
+
     if inst.StartsWith("turn on")
     then
         TurnOn
