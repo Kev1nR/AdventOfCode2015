@@ -97,6 +97,24 @@ let ``contains double letter`` =
         else
             !doubleLetterFound
 
+let ``contains pair of double letters`` =
+    let stringPos = ref 0
+    let cache = ref (new System.Collections.Generic.Dictionary<char,int>())
+     
+    let prevChar = ref (char 0)
+    let doubleLetterFound = ref false
+
+    fun c -> 
+        if c = (char 0) then (prevChar := (char 0);  doubleLetterFound := false)
+
+        if not !doubleLetterFound
+        then
+            doubleLetterFound := !prevChar = c && c <> (char 0)
+            prevChar := c
+            !doubleLetterFound
+        else
+            !doubleLetterFound
+
 let (|Nice|_|) criteria (testStr : string) =
     let charList = testStr.ToCharArray() |> Array.toList
     let rec isNice state chars =
