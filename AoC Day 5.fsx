@@ -97,23 +97,51 @@ let ``contains double letter`` =
         else
             !doubleLetterFound
 
-let ``contains pair of double letters`` =
+let ``contains 2 matching pairs of letters`` =
     let stringPos = ref 0
-    let cache = ref (new System.Collections.Generic.Dictionary<char,int>())
+    let cache = ref (new System.Collections.Generic.Dictionary<char * char, int>())
      
     let prevChar = ref (char 0)
-    let doubleLetterFound = ref false
+    let matchingPairFound = ref false
 
     fun c -> 
-        if c = (char 0) then (prevChar := (char 0);  doubleLetterFound := false)
+        if c = (char 0) then (prevChar := (char 0);  matchingPairFound := false; cache.Value.Clear())
 
-        if not !doubleLetterFound
+        if not !matchingPairFound
         then
-            doubleLetterFound := !prevChar = c && c <> (char 0)
+            match cache.Value.TryGetValue((!prevChar, c)) with
+                | true, pos ->
+                    //printfn "pair in dict %A, is match %A " (!prevChar, c) (!stringPos - pos > 1)
+                    matchingPairFound := (!stringPos - pos > 1)  && (c <> (char 0))
+                | _ ->
+                    //printfn "pair NOT in dict %A" (!prevChar, c) 
+                    if (!prevChar <> (char 0) && c <> (char 0)) then cache.Value.Add((!prevChar, c), !stringPos)
+                    matchingPairFound := false
+            
+            stringPos := !stringPos + 1
             prevChar := c
-            !doubleLetterFound
+
+            !matchingPairFound
         else
-            !doubleLetterFound
+            !matchingPairFound
+
+let ``contains separated twin`` = 
+    let prevChar = ref (char 0)
+    let prevPrevChar = ref (char 0)
+    let found = ref false
+
+    fun c -> 
+        if c = (char 0) then (prevChar := (char 0);  prevPrevChar := (char 0); found := false)
+
+        if not !found && (c <> (char 0))
+        then
+            found := !prevPrevChar = c
+            prevPrevChar := !prevChar
+            prevChar := c
+            !found
+        else
+            !found
+
 
 let (|Nice|_|) criteria (testStr : string) =
     let charList = testStr.ToCharArray() |> Array.toList
@@ -132,12 +160,16 @@ let (|Nice|_|) criteria (testStr : string) =
     
 let howManyNiceStrings (criteria : (char -> bool) list) =
     seq {
-        use sr = new StreamReader(@"C:\Users\Kevin-Roche\Documents\Visual Studio 2013\Projects\AdventOfCode2015\AoC Day5 Naughy and Nice strings.txt")
+        use sr = new StreamReader(@"C:\Users\Kevin-Roche\Documents\GitHub\AdventOfCode2015\AoC Day5 Naughy and Nice strings.txt")
         while not sr.EndOfStream do
             let dimStr = sr.ReadLine()
             criteria |> List.iter (fun f -> f (char 0) |> ignore)
             yield 
                 match dimStr with
-                | Nice criteria _ -> 1
-                | _ -> 0}
+                | Nice criteria _ -> 
+                    printfn "Nice: %s" dimStr
+                    1
+                | _ -> 
+                    printfn "Naughty: %s" dimStr
+                    0}
     |> Seq.fold (fun tot nice -> tot + nice) 0
