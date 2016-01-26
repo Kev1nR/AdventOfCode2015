@@ -53,10 +53,10 @@ let (|TurnOn|TurnOff|Toggle|) (inst : string) =
 
     if inst.StartsWith("turn on")
     then
-        TurnOn
+        TurnOn (getcoords (inst.Substring(7)))
     else if inst.StartsWith("turn off")
     then
-        TurnOff
+        TurnOff (getcoords (inst.Substring(8)))
     else
-        Toggle
+        Toggle (getcoords (inst.Substring(6)))
 
