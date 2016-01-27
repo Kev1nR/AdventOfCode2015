@@ -24,9 +24,33 @@ After following the instructions, how many lights are lit?
 To begin, get your puzzle input.
 
 
-Answer: 
+Your puzzle answer was 377891.
+
+The first half of this puzzle is complete! It provides one gold star: *
+
+
+--- Part Two ---
+
+You just finish implementing your winning light pattern when you realize you mistranslated Santa's message from Ancient Nordic Elvish.
+
+The light grid you bought actually has individual brightness controls; each light can have a brightness of zero or more. The lights all start at zero.
+
+The phrase turn on actually means that you should increase the brightness of those lights by 1.
+
+The phrase turn off actually means that you should decrease the brightness of those lights by 1, to a minimum of zero.
+
+The phrase toggle actually means that you should increase the brightness of those lights by 2.
+
+What is the total brightness of all lights combined after following Santa's instructions?
+
+For example:
+  - turn on 0,0 through 0,0 would increase the total brightness by 1.
+  - toggle 0,0 through 999,999 would increase the total brightness by 2000000.
+
 
 *)
+open System.Collections
+open System.IO
 
 let instructions = ["turn on 887,9 through 959,629";
                     "turn on 454,398 through 844,448";
@@ -50,7 +74,7 @@ let (|TurnOn|TurnOff|Toggle|) (inst : string) =
             System.Int32.Parse(crds.[2]),
             System.Int32.Parse(crds.[3])
         )
-
+        
     if inst.StartsWith("turn on")
     then
         TurnOn (getcoords (inst.Substring(7)))
@@ -59,4 +83,84 @@ let (|TurnOn|TurnOff|Toggle|) (inst : string) =
         TurnOff (getcoords (inst.Substring(8)))
     else
         Toggle (getcoords (inst.Substring(6)))
+
+let turnOnBits (display : BitArray array) coords =
+    let x1,y1,x2,y2 = coords
+    let orWith = new BitArray([| for n in 0..999 -> n >= x1 && n <= x2 |])
+
+    let rec doRow y =
+        //printfn "row %d" y
+        display.[y].Or(orWith) |> ignore
+        
+        if y = y2 then () else doRow (y + 1)
+
+    doRow y1
+
+let turnOffBits (display : BitArray array) coords =
+    let x1,y1,x2,y2 = coords
+    let andWith = new BitArray([| for n in 0..999 -> n < x1 || n > x2 |])
+
+    let rec doRow y =
+       // printfn "row %d" y
+        display.[y].And(andWith) |> ignore
+        
+        if y = y2 then () else doRow (y + 1)
+
+    doRow y1
+        
+let toggleBits (display : BitArray array) coords =
+    let x1,y1,x2,y2 = coords
+    let xorWith = new BitArray([| for n in 0..999 -> n >= x1 && n <= x2 |])
+
+    let rec doRow y =
+        //printfn "row %d" y
+        display.[y].Xor(xorWith) |> ignore
+        
+        if y = y2 then () else doRow (y + 1)
+
+    doRow y1
+
+let countUp (display : BitArray array) =
+    let rec count row col total =
+        match (row, col) with
+        | 1000, 0   -> total
+        | r, 1000   -> count (r + 1) 0 total
+        | r, c      -> 
+            if display.[r].[c] 
+            then
+                count r (c + 1) (total + 1)
+            else 
+                count r (c + 1) total
+    count 0 0 0
+
+let letTheShowBegin instructions =
+    let display = [| for n in 0..999 -> new BitArray(1000) |]
+    let turnOn = turnOnBits display
+    let turnOff = turnOffBits display
+    let toggle = toggleBits display
+
+    let rec doNext instruction =
+        match instruction with
+        | [] -> 
+            printfn "It's all over"
+            display
+        | h :: t ->
+            match h with
+            | TurnOn cs     -> turnOn cs                                              
+            | TurnOff cs    -> turnOff cs
+            | Toggle cs     -> toggle cs 
+
+            doNext t
+
+    doNext instructions
+
+let readFileIntoList () =
+    seq {
+        use sr = new StreamReader(@"C:\Users\Kevin-Roche\Documents\GitHub\AdventOfCode2015\Day 6 input.txt")
+        while not sr.EndOfStream do
+            let dimStr = sr.ReadLine()
+            yield dimStr
+        }
+    |> Seq.toList
+
 
