@@ -84,66 +84,25 @@ let (|TurnOn|TurnOff|Toggle|) (inst : string) =
     else
         Toggle (getcoords (inst.Substring(6)))
 
-let turnOnBits (display : BitArray array) coords =
+
+let turnOnBits = (fun i -> 1)
+let turnOffBits = (fun i -> 0)
+let toggleBits = (fun i -> if i = 0 then 1 else 0)
+
+let incBrightness1 = (fun i -> i + 1)
+let decBrightness1 = (fun i -> if i = 0 then 0 else i - 1)
+let incBrightness2 = (fun i -> i + 2)
+
+let changeBrightness action (display : int array array) coords =
     let x1,y1,x2,y2 = coords
-    let orWith = new BitArray([| for n in 0..999 -> n >= x1 && n <= x2 |])
+    let addRange = [| for n in 0..999 -> if n >= x1 && n <= x2 then action else id |]
 
     let rec doRow y =
-        //printfn "row %d" y
-        display.[y].Or(orWith) |> ignore
+        display.[y] |> Array.iteri (fun i v -> display.[y].[i] <- addRange.[i] v)
         
         if y = y2 then () else doRow (y + 1)
 
     doRow y1
-
-let changeBrightness brightness (display : int array array) coords =
-    let x1,y1,x2,y2 = coords
-    let addRange = [| for n in 0..999 -> if n >= x1 && n <= x2 then brightness else 0 |]
-
-    let rec doRow y =
-        //printfn "row %d" y
-        display.[y] |> Array.iteri (fun i v -> if v > 0 then display.[y].[i] <- (v + addRange.[i]))
-        
-        if y = y2 then () else doRow (y + 1)
-
-    doRow y1
-
-let turnOffBits (display : BitArray array) coords =
-    let x1,y1,x2,y2 = coords
-    let andWith = new BitArray([| for n in 0..999 -> n < x1 || n > x2 |])
-
-    let rec doRow y =
-       // printfn "row %d" y
-        display.[y].And(andWith) |> ignore
-        
-        if y = y2 then () else doRow (y + 1)
-
-    doRow y1
-
-let toggleBits (display : BitArray array) coords =
-    let x1,y1,x2,y2 = coords
-    let xorWith = new BitArray([| for n in 0..999 -> n >= x1 && n <= x2 |])
-
-    let rec doRow y =
-        //printfn "row %d" y
-        display.[y].Xor(xorWith) |> ignore
-        
-        if y = y2 then () else doRow (y + 1)
-
-    doRow y1
-
-let countUp (display : BitArray array) =
-    let rec count row col total =
-        match (row, col) with
-        | 1000, 0   -> total
-        | r, 1000   -> count (r + 1) 0 total
-        | r, c      -> 
-            if display.[r].[c] 
-            then
-                count r (c + 1) (total + 1)
-            else 
-                count r (c + 1) total
-    count 0 0 0
 
 let sumUpBrightness (display : int array array) =
     let rec count row col total =
@@ -154,11 +113,10 @@ let sumUpBrightness (display : int array array) =
 
     count 0 0 0
 
-let letTheShowBegin  instructions =
-    let display = [| for n in 0..999 -> new BitArray(1000) |]
-    let turnOn = turnOnBits display
-    let turnOff = turnOffBits display
-    let toggle = toggleBits display
+let letTheShowBegin display (turnOnFn, turnOffFn, toggleFn) instructions =
+    let turnOn = changeBrightness turnOnFn display
+    let turnOff = changeBrightness turnOffFn display
+    let toggle = changeBrightness toggleFn display
 
     let rec doNext instruction =
         match instruction with
