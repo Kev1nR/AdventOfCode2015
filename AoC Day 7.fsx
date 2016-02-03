@@ -55,14 +55,57 @@ open System
 type Signal = uint16 option
 let inline signal n = Some <| uint16 n
 
+type binaryFunc = Signal -> Signal -> Signal
+type unaryFunc = Signal -> Signal
+
 type Gate = 
-    | AND of string * string * string * (Signal -> Signal -> Signal)
-    | OR of string * string * string * (Signal -> Signal -> Signal)
-    | NOT of string * string * (Signal -> Signal)
-    | NOP of string * string * (Signal -> Signal)
-    
+    | AND of string * string * string * binaryFunc
+    | OR of string * string * string * binaryFunc
+    | NOT of string * string * unaryFunc
+    | NOP of string * string * unaryFunc
+
+let andFn : binaryFunc = fun l r ->
+    match l, r with
+    | Some l', Some r' -> signal (l' &&& r')
+    | _ -> None
+
+let orFn : binaryFunc = fun l r ->
+    match l, r with
+    | Some l', Some r' -> signal (l' ||| r')
+    | _ -> None
+
+let notFn : unaryFunc = fun i ->
+    match i with
+    | Some i' -> signal (~~~ i')
+    | _ -> None
+
+let nopFn : unaryFunc = id
+        
 type Circuit =
-    | Connection of Gate * Gate
-    | EndPoint of Gate
+    | Empty
+    | Circuit of Gate * Circuit * Gate
+    with connect circuit gate =
+        
 
 
+// Test data
+let gates = [
+    "f AND e -> g";
+    "d OR b -> f";
+    "NOT b -> e";
+    "g OR e -> h";
+    "a AND b -> c";
+    "NOT c -> d";
+    "h -> i"]
+
+let gates' = [
+    AND ("f", "e", "g", andFn);
+    OR ("d", "b", "f", orFn);
+    NOT ("b", "e", notFn);
+    OR ("g", "e", "h", orFn);
+    AND ("a", "b", "c", andFn);
+    NOT ("c", "d", notFn);
+    NOP ("h", "i", nopFn)]
+
+let testCircuit = Circuit (gates'.[0], Empty, gates'.[6])    
+let testCircuit2 = Circuit (gates'.[1], testCircuit, gates'.[5])    
