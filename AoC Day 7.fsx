@@ -83,8 +83,8 @@ let nopFn : unaryFunc = id
         
 type Circuit =
     | Empty
-    | Circuit of Gate * Circuit * Gate
-    with connect circuit gate =
+    | Circuit of Gate * Circuit * Circuit
+   // with connect circuit gate =
         
 
 
@@ -107,5 +107,10 @@ let gates' = [
     NOT ("c", "d", notFn);
     NOP ("h", "i", nopFn)]
 
-let testCircuit = Circuit (gates'.[0], Empty, gates'.[6])    
-let testCircuit2 = Circuit (gates'.[1], testCircuit, gates'.[5])    
+let testCircuit = Circuit (gates'.[0], Empty, Empty)    
+let testCircuit2 = Circuit (gates'.[1], testCircuit, Empty)    
+
+let traverse circuit =
+    match circuit with
+    | Circuit(g, a, b) -> printfn "%A, %A, %A" g a b
+    | _ -> printfn "?"
