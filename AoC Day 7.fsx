@@ -50,3 +50,19 @@ To begin, get your puzzle input.
 Answer:
 
 *)
+open System
+
+type Signal = uint16 option
+let inline signal n = Some <| uint16 n
+
+type Gate = 
+    | AND of string * string * string * (Signal -> Signal -> Signal)
+    | OR of string * string * string * (Signal -> Signal -> Signal)
+    | NOT of string * string * (Signal -> Signal)
+    | NOP of string * string * (Signal -> Signal)
+    
+type Circuit =
+    | Connection of Gate * Gate
+    | EndPoint of Gate
+
+
